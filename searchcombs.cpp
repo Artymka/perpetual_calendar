@@ -1,20 +1,49 @@
 #include "searchcombs.h"
 #include "randomcounter.h"
+#include <QDebug>
 
-SearchCombs::SearchCombs(Board prev_board, int detail_ind, QList<Detail> details)
-    : QObject(nullptr),
-    start_prev_board(prev_board),
-    start_detail_ind(detail_ind),
-    start_details(details)
-{}
+SearchCombs::SearchCombs() : QObject(nullptr)
+{
+    connect(this, &SearchCombs::ready, this, &SearchCombs::run);
+    status = 0;
+};
+
+void SearchCombs::setData(Board& prev_board, int detail_ind, QList<Detail>& details)
+{
+    startPrevBoard = prev_board;
+    startDetailInd = detail_ind;
+    startDetails = details;
+}
+
+void SearchCombs::restart()
+{
+    switch (status)
+    {
+    case 0:
+        status = 1;
+        emit ready();
+        break;
+    case 1:
+        status = 2;
+        break;
+    case 2:
+        break;
+    }
+}
 
 void SearchCombs::run()
 {
-    calc(start_prev_board, start_detail_ind, start_details, res_board);
-    emit finished(res_board);
+    bool not_terminated = calc(startPrevBoard, startDetailInd, startDetails, res_board);
+    if (not_terminated) {
+        status = 0;
+        emit finished(res_board);
+    }
+    else {
+        status = 1;
+        emit ready();
+    }
 }
 
-// bool SearchCombs(Board& prev_board, int detail_ind, QList<Detail>& details, Board& res_board)
 bool SearchCombs::calc(Board& prev_board, int detail_ind, QList<Detail>& details, Board& res_board)
 {
     //Board board = prev_board;
@@ -27,6 +56,13 @@ bool SearchCombs::calc(Board& prev_board, int detail_ind, QList<Detail>& details
         //перебор координат
         for (RandomCounter x(7); x.valid(); x.up()) {
             for (RandomCounter y(7); y.valid(); y.up()) {
+
+                // штука, необходимая для остановки перебора
+                if (status == 2) {
+                    // qDebug() << "mustTerminate in calc";
+                    return false;
+                }
+
                 Board curr_board = prev_board;
                 bool success = curr_board.put(x.get(), y.get(), detail, si.get());
 

@@ -11,21 +11,26 @@ class SearchCombs : public QObject
     Q_OBJECT
 
 public:
-    SearchCombs(Board, int, QList<Detail>);
+    SearchCombs();
+    void setData(Board&, int, QList<Detail>&);
+    void restart();
 
 private:
-    Board start_prev_board;
-    int start_detail_ind;
-    QList<Detail> start_details;
+    Board startPrevBoard;
+    int startDetailInd;
+    QList<Detail> startDetails;
     Board res_board;
+    int status;
 
     bool calc(Board&, int, QList<Detail>&, Board&);
 
 signals:
     void finished(Board);
+    void ready();
 
 public slots:
     void run();
+    // void terminate();
 };
 
 // bool SearchCombs(Board&, int, QList<Detail>&, Board&);

@@ -1,8 +1,7 @@
 #include "mainwindow.h"
 #include "constants.h"
-#include "searchcombs.h"
 #include <algorithm>
-#include <QThread>
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget{parent}
@@ -28,13 +27,19 @@ MainWindow::MainWindow(QWidget *parent)
     monthLayout->addWidget(monthBox);
 
     // таймер
-    minuteLabel = new QLabel("0");
-    secondLabel = new QLabel("0");
-    timer = new QTimer();
+    timeLabel = new QLabel("Время перебора");
+    minuteLabel = new QLabel("0 мин");
+    secondLabel = new QLabel("0 с");
+    minuteLabel->setAlignment(Qt::AlignRight);
+    secondLabel->setAlignment(Qt::AlignLeft);
     timerLayout = new QHBoxLayout();
 
+    timerLayout->addWidget(timeLabel);
     timerLayout->addWidget(minuteLabel);
     timerLayout->addWidget(secondLabel);
+
+    timer = new QTimer();
+    runningTime = 0;
 
     // поле
     startButton = new QPushButton("Рассчитать");
@@ -61,14 +66,52 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout->addLayout(timerLayout);
     mainLayout->addLayout(boardGrid);
 
+    // connect(this->startButton, &QPushButton::clicked, this, &MainWindow::testStartButton);
+
+    searchThread = new QThread();
+    search = new SearchCombs();
+    search->moveToThread(searchThread);
+    searchThread->start();
+
+    qRegisterMetaType<Board>();
+
     // подключение слотов
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startCalculating);
-    connect(this->startButton, &QPushButton::clicked, this, &MainWindow::testStartButton);
+
+    connect(search, &SearchCombs::finished, this, &MainWindow::showResult);
+    connect(search, &SearchCombs::ready, this, &MainWindow::readyTest);
+
+    connect(startButton, &QPushButton::clicked, this, &MainWindow::startTimer);
+    connect(search, &SearchCombs::finished, this, &MainWindow::stopTimer);
+    connect(timer, &QTimer::timeout, this, &MainWindow::timeOut);
 }
 
-void MainWindow::testStartButton()
+void MainWindow::readyTest()
 {
-    qDebug() << "test start button";
+    qDebug() << "ready";
+}
+
+void MainWindow::timeOut()
+{
+    qDebug() << "timeout";
+    runningTime++;
+    secondLabel->setText(QString::number(runningTime % 60) + QString(" с"));
+    minuteLabel->setText(QString::number(runningTime / 60) + QString(" мин"));
+}
+
+void MainWindow::startTimer()
+{
+    qDebug() << "startTimer";
+    runningTime = 0;
+    timer->start(1000);
+    secondLabel->setText("0 с");
+    minuteLabel->setText("0 мин");
+}
+
+void MainWindow::stopTimer()
+{
+    qDebug() << "stopTimer";
+    timer->stop();
 }
 
 void MainWindow::clearBoard()
@@ -100,8 +143,7 @@ void MainWindow::fillBoard(Board &board)
 
 void MainWindow::startCalculating()
 {
-    // очистка доски
-    // clearBoard();
+    // startButton->setEnabled(false);
 
     QList<Detail> details;
     for (int i = 0; i < DETAILS_SHAPES.size(); i++) {
@@ -119,20 +161,21 @@ void MainWindow::startCalculating()
     start_board.block(day, month);
 
     // запуск перебора
-    SearchCombs *search = new SearchCombs(start_board, 0, details);
-    QThread *searchThread = new QThread();
+    search->setData(start_board, 0, details);
+    search->restart();
+    // search->terminate();
 
-    search->moveToThread(searchThread);
-    connect(searchThread, &QThread::started, search, &SearchCombs::run);
-    connect(search, &SearchCombs::finished, searchThread, &QThread::terminate);
+    // search->moveToThread(searchThread);
+    // connect(searchThread, &QThread::started, search, &SearchCombs::run);
+    // connect(search, &SearchCombs::finished, searchThread, &QThread::quit);
 
     // прерываем предыдущий поток, если рассчёты начались заново
-    connect(this->startButton, &QPushButton::clicked, searchThread, &QThread::quit);
+    // connect(startButton, &QPushButton::clicked, search, &SearchCombs::terminate);
+    // connect(startButton, &QPushButton::clicked, searchThread, &QThread::terminate);
 
-    qRegisterMetaType<Board>();
-    connect(search, &SearchCombs::finished, this, &MainWindow::showResult);
 
-    searchThread->start();
+
+    // searchThread->start();
 }
 
 void MainWindow::showResult(Board res_board)

@@ -11,7 +11,9 @@
 #include <QSpinBox>
 #include <QTimer>
 #include <QList>
+#include <QThread>
 #include "board.h"
+#include "searchcombs.h"
 
 class MainWindow : public QWidget
 {
@@ -24,16 +26,23 @@ private:
     QLabel *monthLabel;
     QSpinBox *dayBox;
     QSpinBox *monthBox;
-    QPushButton *startButton;
+    QHBoxLayout *dayLayout;
+    QHBoxLayout *monthLayout;
+
+    QLabel *timeLabel;
     QLabel *minuteLabel;
     QLabel *secondLabel;
     QTimer *timer;
+    int runningTime;
     QHBoxLayout *timerLayout;
+
     QVBoxLayout *mainLayout;
-    QHBoxLayout *dayLayout;
-    QHBoxLayout *monthLayout;
     QGridLayout *boardGrid;
     QList<QList<QLabel*>> boardLabels;
+    QPushButton *startButton;
+
+    QThread *searchThread;
+    SearchCombs *search;
 
     void clearBoard();
     void fillBoard(Board&);
@@ -41,7 +50,10 @@ private:
 private slots:
     void startCalculating();
     void showResult(Board);
-    void testStartButton();
+    void readyTest();
+    void timeOut();
+    void startTimer();
+    void stopTimer();
 };
 
 #endif // MAINWINDOW_H
