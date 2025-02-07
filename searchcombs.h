@@ -23,10 +23,12 @@ private:
     int status;
 
     bool calc(Board&, int, QList<Detail>&, Board&);
+    int counter;
 
 signals:
     void finished(Board);
     void ready();
+    void intermediate(Board);
 
 public slots:
     void run();

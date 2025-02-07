@@ -84,6 +84,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startTimer);
     connect(search, &SearchCombs::finished, this, &MainWindow::stopTimer);
     connect(timer, &QTimer::timeout, this, &MainWindow::timeOut);
+
+    connect(search, &SearchCombs::intermediate, this, &MainWindow::showResult);
 }
 
 void MainWindow::readyTest()

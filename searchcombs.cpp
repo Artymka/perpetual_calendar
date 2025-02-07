@@ -6,6 +6,7 @@ SearchCombs::SearchCombs() : QObject(nullptr)
 {
     connect(this, &SearchCombs::ready, this, &SearchCombs::run);
     status = 0;
+    counter = 0;
 };
 
 void SearchCombs::setData(Board& prev_board, int detail_ind, QList<Detail>& details)
@@ -73,8 +74,11 @@ bool SearchCombs::calc(Board& prev_board, int detail_ind, QList<Detail>& details
                 }
 
                 if (success) {
-                    //отладочное отображение доски
-                    //recorder.showBoard(curr_board, 0, 0);
+                    counter++;
+                    // если положили деталь, с определённой периодичностью показываем доску
+                    if (counter % 10000 == 0) {
+                        emit intermediate(curr_board);
+                    }
 
                     bool is_filled = calc(curr_board, detail_ind + 1, details, res_board);
                     if (is_filled) {
